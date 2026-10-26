@@ -26,4 +26,5 @@ def generate [program: string, ...args: string] {
 def main [] {
     generate mise activate nu
     generate zoxide init nushell
+    generate carapace _carapace nushell
 }
