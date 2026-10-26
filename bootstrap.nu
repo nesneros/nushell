@@ -55,8 +55,9 @@ def generate-oh-my-posh [jsonnet_src: string] {
 }
 
 def main [] {
+    generate atuin init nu -- --disable-up-arrow
+    generate carapace _carapace nushell
     generate mise activate nu
     generate zoxide init nushell
-
     generate-oh-my-posh $oh_my_posh_jsonnet
 }
