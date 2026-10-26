@@ -24,7 +24,9 @@ def generate [program: string, ...args: string] {
 }
 
 def main [] {
+    generate atuin init nu -- --disable-up-arrow 
+    generate carapace _carapace nushell
     generate mise activate nu
     generate zoxide init nushell
-    generate carapace _carapace nushell
+ 
 }

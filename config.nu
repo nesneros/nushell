@@ -42,4 +42,21 @@ $env.config = {
         m: "mise"
         mr: "mise run"
     }
+
+    completions: {
+        algorithm: "fuzzy"
+    }
+
+    display_errors: {
+        exit_code: true
+    }
+
+    rm: {
+        always_trash: true
+    }
+
+    show_banner: false
+
+    use_kitty_protocol: true
+
 }
