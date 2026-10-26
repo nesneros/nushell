@@ -38,6 +38,7 @@ $env.config = {
         g: "git"
         gs: "git status"
         k: "kubectl"
+        la: "ls -la"
         ll: "ls -l"
         m: "mise"
         mr: "mise run"
