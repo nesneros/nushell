@@ -1,4 +1,5 @@
 env.nu
+generated/
 history.txt
 .vscode/
 plugin.msgpackz

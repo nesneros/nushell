@@ -3,26 +3,38 @@
 # One-time setup for this Nushell config. Run it once:
 #   nu ($nu.default-config-dir | path join setup.nu)
 #
-# It writes startup scripts into the user autoload directory when the
-# programs are installed. Nushell sources every .nu file there on later
-# startups.
+# It writes startup scripts into the generated directory when the programs
+# are installed. config.nu sources generated/_load.nu on later startups.
 # Run it again only when you want to refresh those generated scripts.
 
+const generated_dir = ($nu.default-config-dir | path join "generated")
 const oh_my_posh_jsonnet = ($nu.home-dir | path join "my-zcomet/dotfiles/oh-my-posh.jsonnet")
 
-# Run `program ...args` and save stdout as autoload/<program>.nu.
+# Remove every file left by a previous run, then recreate the directory.
+def clear-generated-dir [] {
+    mkdir $generated_dir
+    let entries = (
+        ls -a $generated_dir
+        | get name
+        | where {|path| $path != $generated_dir}
+    )
+    if not ($entries | is-empty) {
+        rm --permanent --force --recursive ...$entries
+    }
+}
+
+# Run `program ...args` and save stdout as generated/<program>.nu.
 # Skips the program when it is not installed.
 def generate [program: string, ...args: string] {
-    let autoload_dir = $nu.default-config-dir | path join "autoload"
-    mkdir $autoload_dir
+    mkdir $generated_dir
 
     if not (installed $program) {
         print $"($program) is not installed; skipped ($program).nu"
         return
     }
 
-    run-external $program ...$args | save -f ($autoload_dir | path join $"($program).nu")
-    print $"Generated ($program).nu in ($autoload_dir)"
+    run-external $program ...$args | save -f ($generated_dir | path join $"($program).nu")
+    print $"Generated ($program).nu in ($generated_dir)"
 }
 
 def installed [name: string] {
@@ -32,8 +44,7 @@ def installed [name: string] {
 # Compile the jsonnet prompt to JSON, then write the oh-my-posh startup script.
 # The JSON stays next to that script: the init script points at it on every prompt.
 def generate-oh-my-posh [jsonnet_src: string] {
-    let autoload_dir = $nu.default-config-dir | path join "autoload"
-    mkdir $autoload_dir
+    mkdir $generated_dir
 
     if not (installed oh-my-posh) {
         print "oh-my-posh is not installed; skipped oh-my-posh.nu"
@@ -48,18 +59,17 @@ def generate-oh-my-posh [jsonnet_src: string] {
         return
     }
 
-    let config_path = $autoload_dir | path join "oh-my-posh.json"
+    let config_path = $generated_dir | path join "oh-my-posh.json"
     ^jsonnet $jsonnet_src | save -f $config_path
-    ^oh-my-posh init nu --config $config_path --print | save -f ($autoload_dir | path join "oh-my-posh.nu")
-    print $"Generated oh-my-posh.nu in ($autoload_dir)"
+    ^oh-my-posh init nu --config $config_path --print | save -f ($generated_dir | path join "oh-my-posh.nu")
+    print $"Generated oh-my-posh.nu in ($generated_dir)"
 }
 
 # Write the starship startup script. The prompt theme lives in starship.toml,
 # next to this file; the init script is pinned to that path so the prompt
 # survives even if STARSHIP_CONFIG isn't set in the environment.
 def generate-starship [] {
-    let autoload_dir = $nu.default-config-dir | path join "autoload"
-    mkdir $autoload_dir
+    mkdir $generated_dir
 
     if not (installed starship) {
         print "starship is not installed; skipped starship.nu"
@@ -74,18 +84,17 @@ def generate-starship [] {
 
     let pin = $"export-env \{ \$env.STARSHIP_CONFIG = ($config_path | to nuon) }"
     let init_script = (^starship init nu)
-    $"($pin)\n($init_script)" | save -f ($autoload_dir | path join "starship.nu")
-    print $"Generated starship.nu in ($autoload_dir)"
+    $"($pin)\n($init_script)" | save -f ($generated_dir | path join "starship.nu")
+    print $"Generated starship.nu in ($generated_dir)"
 }
 
-# Register a bundled nu plugin (eg. "gstat", "query") and write the autoload
-# shim that brings it into scope. `plugin use` is a parser keyword: it fails
-# to even parse if the plugin isn't registered yet, so it must live in its
-# own file that's only written (and therefore only sourced) once the plugin
-# is actually present - see prompt.nu for the part that calls `gstat`.
+# Register a bundled nu plugin (eg. "gstat", "query") and write the shim that
+# brings it into scope. `plugin use` is a parser keyword: it fails to even
+# parse if the plugin isn't registered yet, so it must live in its own file
+# that's only written (and therefore only sourced) once the plugin is
+# actually present - see prompt.nu for the part that calls `gstat`.
 def add-plugin [name: string] {
-    let autoload_dir = $nu.default-config-dir | path join "autoload"
-    mkdir $autoload_dir
+    mkdir $generated_dir
 
     let plugin_path = ($nu.current-exe | path dirname | path join $"nu_plugin_($name)")
     if not ($plugin_path | path exists) {
@@ -97,11 +106,27 @@ def add-plugin [name: string] {
         plugin add $plugin_path
     }
 
-    $"plugin use ($name)" | save -f ($autoload_dir | path join $"($name).nu")
-    print $"Generated ($name).nu in ($autoload_dir)"
+    $"plugin use ($name)" | save -f ($generated_dir | path join $"($name).nu")
+    print $"Generated ($name).nu in ($generated_dir)"
+}
+
+# Source every generated script. Written last so it only names files that exist.
+def write-loader [] {
+    let scripts = (
+        ls $generated_dir
+        | where type == file
+        | where {|entry| ($entry.name | path parse).extension == "nu"}
+        | where {|entry| ($entry.name | path basename) != "_load.nu"}
+        | get name
+        | sort
+    )
+    let body = ($scripts | each {|script| $"source ($script | to nuon)"} | str join "\n")
+    $"# Generated by setup.nu. Do not edit.\n($body)\n" | save -f ($generated_dir | path join "_load.nu")
 }
 
 def main [] {
+    clear-generated-dir
+
     generate atuin init nu -- --disable-up-arrow
     generate carapace _carapace nushell
     generate mise activate nu
@@ -113,4 +138,6 @@ def main [] {
     # generate-oh-my-posh $oh_my_posh_jsonnet
     # starship kept for reference only (see starship.toml); not active.
     # generate-starship
+
+    write-loader
 }
