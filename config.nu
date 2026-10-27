@@ -46,7 +46,7 @@ $env.config = {
     }
 
     completions: {
-        algorithm: "fuzzy"
+        # algorithm: "fuzzy"
     }
 
     display_errors: {
