@@ -78,14 +78,21 @@ def generate-starship [] {
     print $"Generated starship.nu in ($autoload_dir)"
 }
 
-# Register a bundled nu plugin (eg. "gstat", "query") in the plugin registry
-# file. That's the only persistent step needed - nushell automatically loads
-# every registered plugin into scope on every future startup, with no
-# `plugin use` required anywhere in config. (`plugin use` only matters right
-# after `plugin add`, to bring it into *this* already-running process.)
+# Register a nu plugin. Checks next to the `nu` binary first (eg. "gstat"),
+# then falls back to `mise which` (eg. a cargo-backend mise tool).
 def add-plugin [name: string] {
-    let plugin_path = ($nu.current-exe | path dirname | path join $"nu_plugin_($name)")
-    if not ($plugin_path | path exists) {
+    let bundled_path = ($nu.current-exe | path dirname | path join $"nu_plugin_($name)")
+
+    let plugin_path = if ($bundled_path | path exists) {
+        $bundled_path
+    } else if (installed mise) {
+        let result = (^mise which $"nu_plugin_($name)" | complete)
+        if $result.exit_code == 0 { $result.stdout | str trim } else { null }
+    } else {
+        null
+    }
+
+    if $plugin_path == null or ($plugin_path | is-empty) or not ($plugin_path | path exists) {
         print $"nu_plugin_($name) is not installed; skipped"
         return
     }
@@ -104,6 +111,7 @@ def main [] {
     generate mise activate nu
     generate zoxide init nushell
     add-plugin gstat
+    add-plugin port_extension
     # generate-oh-my-posh $oh_my_posh_jsonnet
     # generate-starship
 }
