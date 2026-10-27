@@ -54,10 +54,35 @@ def generate-oh-my-posh [jsonnet_src: string] {
     print $"Generated oh-my-posh.nu in ($autoload_dir)"
 }
 
+# Write the starship startup script. The prompt theme lives in starship.toml,
+# next to this file; the init script is pinned to that path so the prompt
+# survives even if STARSHIP_CONFIG isn't set in the environment.
+def generate-starship [] {
+    let autoload_dir = $nu.default-config-dir | path join "autoload"
+    mkdir $autoload_dir
+
+    if not (installed starship) {
+        print "starship is not installed; skipped starship.nu"
+        return
+    }
+
+    let config_path = $nu.default-config-dir | path join "starship.toml"
+    if not ($config_path | path exists) {
+        print $"starship config not found: ($config_path)"
+        return
+    }
+
+    let pin = $"export-env \{ \$env.STARSHIP_CONFIG = ($config_path | to nuon) }"
+    let init_script = (^starship init nu)
+    $"($pin)\n($init_script)" | save -f ($autoload_dir | path join "starship.nu")
+    print $"Generated starship.nu in ($autoload_dir)"
+}
+
 def main [] {
     generate atuin init nu -- --disable-up-arrow
     generate carapace _carapace nushell
     generate mise activate nu
     generate zoxide init nushell
-    generate-oh-my-posh $oh_my_posh_jsonnet
+    # generate-oh-my-posh $oh_my_posh_jsonnet
+    # generate-starship
 }
