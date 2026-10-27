@@ -63,4 +63,12 @@ $env.config = {
 
 }
 
-source prompt.nu
+const loader_file = ($nu.default-config-dir | path join "generated/_load.nu")
+const generated_loader = (
+    if ($loader_file | path exists) {
+        ($loader_file | path expand)
+    } else {
+        null
+    }
+)
+source $generated_loader
