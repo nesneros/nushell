@@ -78,27 +78,24 @@ def generate-starship [] {
     print $"Generated starship.nu in ($autoload_dir)"
 }
 
-# Register a bundled nu plugin (eg. "gstat", "query") and write the autoload
-# shim that brings it into scope. `plugin use` is a parser keyword: it fails
-# to even parse if the plugin isn't registered yet, so it must live in its
-# own file that's only written (and therefore only sourced) once the plugin
-# is actually present - see prompt.nu for the part that calls `gstat`.
+# Register a bundled nu plugin (eg. "gstat", "query") in the plugin registry
+# file. That's the only persistent step needed - nushell automatically loads
+# every registered plugin into scope on every future startup, with no
+# `plugin use` required anywhere in config. (`plugin use` only matters right
+# after `plugin add`, to bring it into *this* already-running process.)
 def add-plugin [name: string] {
-    let autoload_dir = $nu.default-config-dir | path join "autoload"
-    mkdir $autoload_dir
-
     let plugin_path = ($nu.current-exe | path dirname | path join $"nu_plugin_($name)")
     if not ($plugin_path | path exists) {
-        print $"nu_plugin_($name) is not installed; skipped ($name).nu"
+        print $"nu_plugin_($name) is not installed; skipped"
         return
     }
 
     if (plugin list | where name == $name | is-empty) {
         plugin add $plugin_path
+        print $"Registered ($name)"
+    } else {
+        print $"($name) already registered"
     }
-
-    $"plugin use ($name)" | save -f ($autoload_dir | path join $"($name).nu")
-    print $"Generated ($name).nu in ($autoload_dir)"
 }
 
 def main [] {
@@ -107,10 +104,6 @@ def main [] {
     generate mise activate nu
     generate zoxide init nushell
     add-plugin gstat
-    # oh-my-posh disabled: in nu it spawns a fresh process per prompt (no
-    # daemon/streaming support for nu upstream), noticeably slower than zsh
-    # with the same theme. Kept for reference; uncomment to re-enable.
     # generate-oh-my-posh $oh_my_posh_jsonnet
-    # starship kept for reference only (see starship.toml); not active.
     # generate-starship
 }
