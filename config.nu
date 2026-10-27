@@ -63,12 +63,12 @@ $env.config = {
 
 }
 
-const loader_file = ($nu.default-config-dir | path join "generated/_load.nu")
-const generated_loader = (
-    if ($loader_file | path exists) {
-        ($loader_file | path expand)
+const init_file = ($nu.default-config-dir | path join "generated/init.nu")
+const generated_init = (
+    if ($init_file | path exists) {
+        ($init_file | path expand)
     } else {
         null
     }
 )
-source $generated_loader
+source $generated_init
