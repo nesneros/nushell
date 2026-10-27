@@ -36,6 +36,7 @@ def glog [n: int = 20] {
 $env.config = {
     abbreviations: {
         g: "git"
+        gp: "git pull"
         gs: "git status"
         k: "kubectl"
         la: "ls -la"
@@ -61,3 +62,5 @@ $env.config = {
     use_kitty_protocol: true
 
 }
+
+source prompt.nu

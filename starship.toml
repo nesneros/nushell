@@ -1,0 +1,96 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = true
+command_timeout = 1000
+
+format = """
+${custom.root}\
+[ ](bg:#0000ff)\
+$directory\
+[](fg:#0000ff bg:#24d55c)\
+${custom.branch_emoji}\
+$git_branch\
+$git_status\
+[](fg:#24d55c)
+$status\
+$character"""
+
+right_format = """
+[](fg:#0B59E7)$docker_context[](fg:#0B59E7) \
+[](fg:#7FD5EA)$golang[](fg:#7FD5EA) \
+[](fg:#ffffff)$time[](fg:#ffffff) \
+[](fg:#8800dd)$cmd_duration[](fg:#8800dd)\
+"""
+
+[custom.root]
+command = '[ "$(id -u)" = "0" ] && printf ""'
+shell = ["sh"]
+format = '[ $output ](bg:#0000ff fg:#000000)'
+
+[directory]
+style = "bg:#0000ff fg:#ffffff"
+format = "[ $path ]($style)"
+truncation_length = 0
+truncate_to_repo = false
+
+[custom.branch_emoji]
+command = '''
+branch=$(git symbolic-ref --short HEAD 2>/dev/null) || exit
+case "$branch" in
+  feat/*) printf '🚀 ' ;;
+  bug/*) printf '🐛 ' ;;
+esac
+'''
+shell = ["sh"]
+format = '[$output](bg:#24d55c fg:#193549)'
+
+[git_branch]
+symbol = ""
+style = "bg:#24d55c fg:#193549"
+format = '[ $symbol$branch ]($style)'
+
+[git_status]
+style = "bg:#24d55c fg:#193549"
+format = '([$all_status$ahead_behind ]($style))'
+modified = "${count} "
+staged = "${count} "
+untracked = "?${count} "
+deleted = "✘${count} "
+renamed = "➜${count} "
+conflicted = "=${count} "
+ahead = "⇡${count} "
+behind = "⇣${count} "
+diverged = "⇕⇡${ahead_count}⇣${behind_count} "
+
+[docker_context]
+symbol = " "
+style = "bg:#0B59E7 fg:#000000"
+format = '[ $symbol$context ]($style)'
+only_with_files = false
+
+[golang]
+symbol = ""
+style = "bg:#7FD5EA fg:#ffffff"
+format = '[ $version ]($style)'
+
+[time]
+disabled = false
+time_format = "%T"
+style = "bg:#ffffff fg:#000000"
+format = '[ $time ]($style)'
+
+[cmd_duration]
+min_time = 1500
+style = "bg:#8800dd fg:#ffffff"
+format = '[ $duration ]($style)'
+
+[status]
+disabled = false
+style = "fg:#FF5252"
+format = '[$status]($style) '
+symbol = ""
+success_symbol = ""
+
+[character]
+success_symbol = '[❯](bold #D4E157)'
+error_symbol = '[❯](bold #FF5252)'
