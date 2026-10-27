@@ -2,8 +2,8 @@
 #
 # Git info comes from `gstat` (nu_plugin_gstat), which talks to a persistent
 # background plugin process instead of spawning `git` on every render. See
-# setup.nu's `add-plugin` for how the plugin gets registered and brought
-# into scope (autoload/gstat.nu, gitignored, machine-specific).
+# setup.nu's `add-plugin` for the one-time registration step - nushell loads
+# every registered plugin automatically on every startup after that.
 # Falls back to no git segment if the plugin isn't available, and to the
 # plain path if `$env.PWD` isn't under a repo.
 
