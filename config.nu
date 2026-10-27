@@ -62,3 +62,5 @@ $env.config = {
     use_kitty_protocol: true
 
 }
+
+source prompt.nu
