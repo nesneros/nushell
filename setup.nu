@@ -6,6 +6,9 @@
 # It appends startup scripts into generated/init.nu when the programs are
 # installed. config.nu sources that file on later startups.
 # Run it again only when you want to refresh the generated script.
+#
+# mise is handled separately in config.nu, regenerated fresh every shell
+# start instead of cached here.
 
 const generated_file = ($nu.default-config-dir | path join "generated/init.nu")
 
@@ -59,7 +62,6 @@ def main [] {
 
     generate atuin init nu -- --disable-up-arrow
     generate carapace _carapace nushell
-    generate mise activate nu
     generate zoxide init nushell
     add-plugin gstat
     add-plugin port_extension

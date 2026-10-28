@@ -72,3 +72,27 @@ const generated_init = (
     }
 )
 source $generated_init
+
+use std/util "path add"
+
+const homebrew_prefix = "/opt/homebrew"
+
+$env.HOMEBREW_PREFIX = $homebrew_prefix
+
+$env.MANPATH = ($env.MANPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share/man") | uniq | str join ":")
+$env.INFOPATH = ($env.INFOPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share/info") | uniq | str join ":")
+
+path add ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin")
+
+path add ($nu.home-dir | path join "bin")
+
+# Dedup PATH and drop dirs that no longer exist, before baking it below.
+$env.PATH = ($env.PATH | uniq | where {|p| $p | path exists })
+
+# nu has no live `eval`, so mise's init bakes a PATH snapshot. Regenerate it
+# last, here; autoload/mise.nu sources it after this file fully runs.
+if not (which mise | where type == external | is-empty) {
+    let mise_init_file = ($nu.default-config-dir | path join "generated/mise.nu")
+    mkdir ($mise_init_file | path dirname)
+    ^mise activate nu | save -f $mise_init_file
+}
