@@ -83,7 +83,7 @@ $env.HOMEBREW_PREFIX = $homebrew_prefix
 $env.MANPATH = ($env.MANPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share/man") | uniq | str join ":")
 $env.INFOPATH = ($env.INFOPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share/info") | uniq | str join ":")
 
-path add ($nu.home-dir | path join "bin") ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin")
+path add ($nu.home-dir | path join "bin") ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin") "/usr/local/bin/" "usr/local/sbin/"
 
 const init_file = ($nu.default-config-dir | path join "generated/init.nu")
 const generated_init = (
