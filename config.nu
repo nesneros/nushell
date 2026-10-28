@@ -12,6 +12,9 @@
 # options using:
 #     config nu --doc | nu-highlight | less -R
 
+# Set zoxide data directory
+$env._ZO_DATA_DIR = ($env.HOME | path join ".local" "share" "zoxide")
+
 # Set carapace as the fallback completer for external commands
 $env.CARAPACE_BRIDGES = 'zsh'
 
@@ -31,6 +34,14 @@ def glog [n: int = 20] {
     | lines
     | each {|line| $line | from json }
 }
+
+def git-commits [] {
+    ^git log --all --format='%H%x09%P%x09%an%x09%aI%x09%s'
+    | lines
+    | split column "\t" hash parents author date subject
+    | update parents { split row " " | where $it != "" }
+    | update date { into datetime }
+  }
 
 # abbreviations
 $env.config = {
@@ -63,6 +74,17 @@ $env.config = {
 
 }
 
+use std/util "path add"
+
+const homebrew_prefix = "/opt/homebrew"
+
+$env.HOMEBREW_PREFIX = $homebrew_prefix
+
+$env.MANPATH = ($env.MANPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share/man") | uniq | str join ":")
+$env.INFOPATH = ($env.INFOPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share/info") | uniq | str join ":")
+
+path add ($nu.home-dir | path join "bin") ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin")
+
 const init_file = ($nu.default-config-dir | path join "generated/init.nu")
 const generated_init = (
     if ($init_file | path exists) {
@@ -73,18 +95,7 @@ const generated_init = (
 )
 source $generated_init
 
-use std/util "path add"
 
-const homebrew_prefix = "/opt/homebrew"
-
-$env.HOMEBREW_PREFIX = $homebrew_prefix
-
-$env.MANPATH = ($env.MANPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share/man") | uniq | str join ":")
-$env.INFOPATH = ($env.INFOPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share/info") | uniq | str join ":")
-
-path add ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin")
-
-path add ($nu.home-dir | path join "bin")
 
 # Dedup PATH and drop dirs that no longer exist, before baking it below.
 $env.PATH = ($env.PATH | uniq | where {|p| $p | path exists })

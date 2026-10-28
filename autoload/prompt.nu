@@ -177,10 +177,10 @@ def build-prompt-left [] {
     $out = $out + "\n"
 
     if $env.LAST_EXIT_CODE != 0 {
-        $out = $out + (fg-only $"($env.LAST_EXIT_CODE) " $COLORS.error false)
-        $out = $out + (fg-only "❯ " $COLORS.error true)
+        let code = ($env.LAST_EXIT_CODE | into string | fill -a right -c " " -w 2)
+        $out = $out + (fg-only $"($code)❯ " $COLORS.error true)
     } else {
-        $out = $out + (fg-only "❯ " $COLORS.success true)
+        $out = $out + (fg-only "NU❯ " $COLORS.success true)
     }
 
     $out
