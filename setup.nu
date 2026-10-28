@@ -4,7 +4,8 @@
 #   nu ($nu.default-config-dir | path join setup.nu)
 #
 # It appends startup scripts into generated/init.nu when the programs are
-# installed. config.nu sources that file on later startups.
+# installed. autoload/generated.nu sources that file on later startups,
+# after autoload/_mise.nu.
 # Run it again only when you want to refresh the generated script.
 #
 # mise is handled separately in config.nu, regenerated fresh every shell

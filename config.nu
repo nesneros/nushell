@@ -85,23 +85,11 @@ $env.INFOPATH = ($env.INFOPATH? | default "" | split row ":" | prepend ($homebre
 
 path add ($nu.home-dir | path join "bin") ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin") "/usr/local/bin/" "usr/local/sbin/"
 
-const init_file = ($nu.default-config-dir | path join "generated/init.nu")
-const generated_init = (
-    if ($init_file | path exists) {
-        ($init_file | path expand)
-    } else {
-        null
-    }
-)
-source $generated_init
-
-
-
 # Dedup PATH and drop dirs that no longer exist, before baking it below.
 $env.PATH = ($env.PATH | uniq | where {|p| $p | path exists })
 
 # nu has no live `eval`, so mise's init bakes a PATH snapshot. Regenerate it
-# last, here; autoload/mise.nu sources it after this file fully runs.
+# last, here; autoload/_mise.nu sources it after this file fully runs.
 if not (which mise | where type == external | is-empty) {
     let mise_init_file = ($nu.default-config-dir | path join "generated/mise.nu")
     mkdir ($mise_init_file | path dirname)
