@@ -11,7 +11,7 @@
 # mise is handled separately in config.nu, regenerated fresh every shell
 # start instead of cached here.
 
-const generated_file = ($nu.default-config-dir | path join "generated/init.nu")
+const generated_file = ($nu.default-config-dir | path join "generated" "init.nu")
 
 # Run `program ...args` and append stdout to generated/init.nu.
 # Skips the program when it is not installed.
