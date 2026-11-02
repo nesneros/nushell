@@ -64,6 +64,8 @@ def main [] {
     generate atuin init nu -- --disable-up-arrow
     generate carapace _carapace nushell
     generate zoxide init nushell
+    add-plugin formats
     add-plugin gstat
+    add-plugin skim
     add-plugin port_extension
 }
