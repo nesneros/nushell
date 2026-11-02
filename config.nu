@@ -97,3 +97,8 @@ if not (which mise | where type == external | is-empty) {
     mkdir ($mise_init_file | path dirname)
     ^mise activate nu | save -f $mise_init_file
 }
+
+const rg_flags = ["--smart-case" "--no-heading" "--line-number" "--with-filename"]
+def --wrapped rg [...args] {
+    ^rg ...$rg_flags ...$args
+}
