@@ -58,6 +58,7 @@ $env.config = {
 
     completions: {
         # algorithm: "fuzzy"
+        persistent_menus: true
     }
 
     display_errors: {
