@@ -2,6 +2,5 @@
 let veditor = (which e | where type == external)
 if not ($veditor | is-empty) {
     $env.VEDITOR = ($veditor | get path | first)
-    $env.EDITOR = $"($env.VEDITOR) -w"
-    $env.GIT_EDITOR = $env.EDITOR
+    $env.EDITOR = [$env.VEDITOR "-w"]
 }

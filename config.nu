@@ -100,5 +100,6 @@ if not (which mise | where type == external | is-empty) {
 
 const rg_flags = ["--smart-case" "--no-heading" "--line-number" "--with-filename"]
 def --wrapped rg [...args] {
-    ^rg ...$rg_flags ...$args
+    let rg_bin = if not (which rga | where type == external | is-empty) { "rga" } else { "rg" }
+    ^$rg_bin ...$rg_flags ...$args
 }
