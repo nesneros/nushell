@@ -84,9 +84,9 @@ $env.HOMEBREW_PREFIX = $homebrew_prefix
 $env.MANPATH = ($env.MANPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share" "man") | uniq | str join ":")
 $env.INFOPATH = ($env.INFOPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share" "info") | uniq | str join ":")
 
-path add ($nu.home-dir | path join "bin") ($nu.home-dir | path join "share" "bin") 
+path add ($nu.home-dir | path join "bin") ($nu.home-dir | path join ".local" "bin") ($nu.home-dir | path join "share" "bin") 
 path add ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin") 
-path add "/usr/local/bin/" "usr/local/sbin/"
+path add "/usr/local/bin/" "/usr/local/sbin/"
 
 # Dedup PATH and drop dirs that no longer exist, before baking it below.
 $env.PATH = ($env.PATH | uniq | where {|p| $p | path exists })
