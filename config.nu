@@ -12,8 +12,10 @@
 # options using:
 #     config nu --doc | nu-highlight | less -R
 
+use modules/xdg.nu
+
 # Set zoxide data directory
-$env._ZO_DATA_DIR = ($env.HOME | path join ".local" "share" "zoxide")
+$env._ZO_DATA_DIR = ($env.XDG_DATA_HOME | path join "zoxide")
 
 use modules/completions.nu
 use modules/gabbr.nu *
@@ -54,6 +56,7 @@ $env.config = {
 
 }
 
+# Init Homebrew
 use std/util "path add"
 
 const homebrew_prefix = "/opt/homebrew"
@@ -63,7 +66,8 @@ $env.HOMEBREW_PREFIX = $homebrew_prefix
 $env.MANPATH = ($env.MANPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share" "man") | uniq | str join ":")
 $env.INFOPATH = ($env.INFOPATH? | default "" | split row ":" | prepend ($homebrew_prefix | path join "share" "info") | uniq | str join ":")
 
-path add ($nu.home-dir | path join "bin") ($nu.home-dir | path join ".local" "bin") ($nu.home-dir | path join "share" "bin") 
+# Update PATH
+path add ($nu.home-dir | path join "bin") $env.XDG_BIN_HOME ($nu.home-dir | path join "share" "bin")
 path add ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin") 
 path add "/usr/local/bin/" "/usr/local/sbin/"
 
