@@ -15,33 +15,12 @@
 # Set zoxide data directory
 $env._ZO_DATA_DIR = ($env.HOME | path join ".local" "share" "zoxide")
 
-# Set carapace as the fallback completer for external commands
-$env.CARAPACE_BRIDGES = 'zsh'
+use modules/completions.nu
+use modules/gabbr.nu *
+use modules/git.nu *
+use modules/search.nu *
 
-let carapace_completer = {|place|
-    carapace $place.command.0 nushell ...$place.command | from json
-}
-
-$env.config.completions.external = {
-    enable: true
-    max_results: 100
-    completer: $carapace_completer
-}
-
-# View git log as a structured Nushell table
-def glog [n: int = 20] {
-    ^git log --format='{"hash": "%h", "author": "%an", "email": "%ae", "date": "%ad", "subject": "%s"}' -n $n
-    | lines
-    | each {|line| $line | from json }
-}
-
-def git-commits [] {
-    ^git log --all --format='%H%x09%P%x09%an%x09%aI%x09%s'
-    | lines
-    | split column "\t" hash parents author date subject
-    | update parents { split row " " | where $it != "" }
-    | update date { into datetime }
-  }
+gabbr add J '| from json -o'
 
 # abbreviations
 $env.config = {
@@ -97,10 +76,4 @@ if not (which mise | where type == external | is-empty) {
     let mise_init_file = ($nu.default-config-dir | path join "generated" "mise.nu")
     mkdir ($mise_init_file | path dirname)
     ^mise activate nu | save -f $mise_init_file
-}
-
-const rg_flags = ["--smart-case" "--no-heading" "--line-number" "--with-filename"]
-def --wrapped rg [...args] {
-    let rg_bin = if not (which rga | where type == external | is-empty) { "rga" } else { "rg" }
-    ^$rg_bin ...$rg_flags ...$args
 }
