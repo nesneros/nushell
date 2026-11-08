@@ -1,5 +1,3 @@
-# Snippets live in $env.XDG_DATA_HOME/clip (default: ~/.local/share/clip).
-
 # Copy between the clipboard and stdin/stdout, and store named snippets.
 #
 # With no name and nothing piped on stdin, prints the clipboard.
@@ -8,7 +6,9 @@
 # With a name and nothing piped, copies the saved snippet to the clipboard
 # and prints it. With a name and stdin piped, saves stdin as that snippet
 # and copies it to the clipboard.
-def clip [
+#
+# Snippets live in $env.XDG_DATA_HOME/clip (default: ~/.local/share/clip).
+export def main [
     name?: string # snippet name
     --list (-l) # list all saved snippets
     --delete (-d): string # delete a named snippet

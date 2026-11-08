@@ -17,6 +17,7 @@ use modules/xdg.nu
 # Set zoxide data directory
 $env._ZO_DATA_DIR = ($env.XDG_DATA_HOME | path join "zoxide")
 
+use modules/clip.nu
 use modules/completions.nu
 use modules/gabbr.nu *
 use modules/git.nu *
