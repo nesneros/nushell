@@ -12,7 +12,7 @@
 # options using:
 #     config nu --doc | nu-highlight | less -R
 
-use modules/xdg.nu
+use modules/xdg.nu *
 
 # Set zoxide data directory
 $env._ZO_DATA_DIR = ($env.XDG_DATA_HOME | path join "zoxide")

@@ -8,28 +8,22 @@
 # and copies it to the clipboard.
 #
 # Snippets live in $env.XDG_DATA_HOME/clip (default: ~/.local/share/clip).
+use xdg.nu data-dir
+
 export def main [
     name?: string # snippet name
-    --list (-l) # list all saved snippets
+    --list (-l) # list saved snippets as a table
     --delete (-d): string # delete a named snippet
 ] {
-    let data_home = (
-        if ($env.XDG_DATA_HOME? | default "" | is-empty) {
-            $nu.home-dir | path join ".local" "share"
-        } else {
-            $env.XDG_DATA_HOME
-        }
-    )
-    let dir = ($data_home | path join "clip")
-    mkdir $dir
+    let dir = data-dir "clip"
 
     if $list {
-        ls $dir
-        | get name
-        | each {|f| $f | path basename }
-        | sort
-        | each {|name| print $name }
-        return
+        return (
+            ls $dir
+            | select name size modified
+            | update name { path basename }
+            | sort-by name
+        )
     }
 
     if $delete != null {
@@ -52,10 +46,10 @@ export def main [
         return
     }
 
-    let file = ($dir | path join $name)
+    let file = $dir | path join $name
 
     if $piped {
-        let text = ($input | to text --no-newline)
+        let text = $input | to text --no-newline
         $text | ^pbcopy
         ^pbpaste | save -f $file
     } else {
