@@ -54,22 +54,21 @@ const homebrew_prefix = "/opt/homebrew"
 
 $env.HOMEBREW_PREFIX = $homebrew_prefix
 
-$env.MANPATH = (
-    $env.MANPATH?
-    | default ""
-    | split row ":"
-    | prepend ($homebrew_prefix | path join "share" "man")
-    | uniq
-    | str join ":"
-)
-$env.INFOPATH = (
-    $env.INFOPATH?
-    | default ""
-    | split row ":"
-    | prepend ($homebrew_prefix | path join "share" "info")
-    | uniq
-    | str join ":"
-)
+# Prepend directories to a `:`-separated environment variable such as MANPATH
+# or INFOPATH, keeping the existing entries and dropping duplicates.
+def --env "prepend-path-env" [name: string, ...paths: string] {
+    let existing = (
+        $env
+        | get -o $name
+        | default ""
+        | split row ":"
+        | where {|p| $p != "" }
+    )
+    load-env { ($name): ($paths | append $existing | uniq | str join ":") }
+}
+
+prepend-path-env MANPATH ($homebrew_prefix | path join "share" "man")
+prepend-path-env INFOPATH ($homebrew_prefix | path join "share" "info")
 
 # Update PATH
 path add ($nu.home-dir | path join "bin") $env.XDG_BIN_HOME ($nu.home-dir | path join "share" "bin")
