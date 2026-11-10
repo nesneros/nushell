@@ -12,7 +12,7 @@ export-env {
 }
 
 # Path to a named subdirectory of $XDG_DATA_HOME, creating it if needed.
-export def data-dir [
+export def "xdg data-dir" [
     name: string # subdirectory name
 ] {
     let dir = data-home | path join $name

@@ -8,14 +8,14 @@
 # and copies it to the clipboard.
 #
 # Snippets live in $env.XDG_DATA_HOME/clip (default: ~/.local/share/clip).
-use xdg.nu data-dir
+use xdg.nu "xdg data-dir"
 
 export def main [
     name?: string # snippet name
     --list (-l) # list saved snippets as a table
     --delete (-d): string # delete a named snippet
 ] {
-    let dir = data-dir "clip"
+    let dir = xdg data-dir "clip"
 
     if $list {
         return (
