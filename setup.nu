@@ -6,7 +6,12 @@
 # It appends startup scripts into generated/init.nu when the programs are
 # installed. autoload/generated.nu sources that file on later startups,
 # after autoload/_mise.nu.
-# Run it again only when you want to refresh the generated script.
+#
+# It also caches zsh's default fpath in generated/zsh-fpath.txt, which
+# config.nu reads instead of spawning `zsh -f` on every startup.
+#
+# Run it again only when you want to refresh the generated script, after
+# upgrading zsh/Homebrew, or after changing zsh-functions/.
 #
 # mise is handled separately in config.nu, regenerated fresh every shell
 # start instead of cached here.
@@ -28,6 +33,21 @@ def generate [program: string, ...args: string] {
 
 def installed [name: string] {
     not (which $name | where type == external | is-empty)
+}
+
+const zsh_fpath_file = ($nu.default-config-dir | path join "generated" "zsh-fpath.txt")
+
+# Cache the fpath zsh starts with when no rc files are read. It is stable for a
+# given zsh/Homebrew install, so config.nu only probes as a fallback.
+def generate-zsh-fpath [] {
+    if not (installed zsh) {
+        print "zsh is not installed; skipped"
+        return
+    }
+
+    mkdir ($zsh_fpath_file | path dirname)
+    ^env -u FPATH zsh -f -c 'print -rl -- $fpath' | save -f $zsh_fpath_file
+    print $"Wrote ($zsh_fpath_file)"
 }
 
 # Register a nu plugin. Checks next to the `nu` binary first (eg. "gstat"),
@@ -64,6 +84,7 @@ def main [] {
     generate atuin init nu -- --disable-up-arrow
     generate carapace _carapace nushell
     generate zoxide init nushell
+    generate-zsh-fpath
     add-plugin formats
     add-plugin gstat
     add-plugin skim

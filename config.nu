@@ -90,8 +90,13 @@ def carapace_completer [place: record] {
 #
 # zsh-functions/ holds fix-ups that shadow Homebrew's originals (see
 # zsh-functions/_mole), so it goes first.
+#
+# zsh's default fpath is stable for a given zsh/Homebrew install, so setup.nu
+# caches it in generated/zsh-fpath.txt. Run setup.nu if it is missing;
+# re-run it after upgrading zsh or Homebrew.
 let zsh_fpath_fixups = ($nu.default-config-dir | path join "zsh-functions")
-let zsh_default_fpath = (^env -u FPATH zsh -f -c 'print -rl -- $fpath' | lines)
+let zsh_fpath_cache = ($nu.default-config-dir | path join "generated" "zsh-fpath.txt")
+let zsh_default_fpath = (open --raw $zsh_fpath_cache | lines)
 $env.FPATH = (
     [$zsh_fpath_fixups ($homebrew_prefix | path join "share" "zsh" "site-functions")]
     ++ $zsh_default_fpath

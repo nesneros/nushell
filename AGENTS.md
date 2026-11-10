@@ -47,6 +47,7 @@ Nushell loads files in a specific order:
    - One-time or on-demand generator script.
    - Run manually via `nu ($nu.default-config-dir | path join setup.nu)`.
    - Appends startup hooks to `generated/init.nu` for tools like `atuin`, `carapace`, and `zoxide`, and registers Nushell plugins (`gstat`, `port_extension`).
+   - Caches zsh's default `fpath` in `generated/zsh-fpath.txt` (read by `config.nu` instead of spawning `zsh -f` every startup). Re-run after upgrading zsh/Homebrew or changing `zsh-functions/`.
 
 ---
 
@@ -69,7 +70,7 @@ Nushell loads files in a specific order:
 - **Git & Ignored Files:**
   - The following files are in `.gitignore` and must never be tracked:
     - `env.nu`
-    - `generated/` (`init.nu`, `mise.nu`)
+    - `generated/` (`init.nu`, `mise.nu`, `zsh-fpath.txt`)
     - `history.txt`
     - `plugin.msgpackz`
     - `.vscode/`
