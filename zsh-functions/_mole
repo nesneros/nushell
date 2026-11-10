@@ -1,0 +1,22 @@
+#compdef mole mo
+#
+# Fix-up for mole's generated zsh completion (mole 1.67.0, Homebrew).
+#
+# Homebrew's _mole defines `_mole()` and ends with a bare
+# `compdef _mole mole mo` instead of invoking the function. zsh executes an
+# autoloaded completion file *as* the function body, so the first call only
+# defines the function and re-registers it; the completion body never runs.
+# In an interactive zsh the second Tab works because the definition persists,
+# but carapace's bridge starts a fresh `zsh -f` for every completion, so it
+# always hits that first call and returns nothing.
+#
+# Load the real file, then invoke the function so the first call works too.
+# Homebrew's file stays the source of truth (upgrades are picked up as-is).
+#
+# If mole ever ships a fixed file (e.g. the `funcstack[1]` guard that _opencode
+# and _delta use), this shim can be deleted.
+
+if [[ -r /opt/homebrew/share/zsh/site-functions/_mole ]]; then
+    source /opt/homebrew/share/zsh/site-functions/_mole
+    _mole "$@"
+fi

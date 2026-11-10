@@ -88,9 +88,13 @@ def carapace_completer [place: record] {
 # is $env.FPATH. Note that setting FPATH replaces zsh's built-in fpath, so keep
 # zsh's own function dirs and prepend Homebrew's zsh completions (e.g. the
 # _opencode definition); without this the bridge falls back to file completion.
+#
+# zsh-functions/ holds fix-ups that shadow Homebrew's originals (see
+# zsh-functions/_mole), so it goes first.
+let zsh_fpath_fixups = ($nu.default-config-dir | path join "zsh-functions")
 let zsh_default_fpath = (^env -u FPATH zsh -f -c 'print -rl -- $fpath' | lines)
 $env.FPATH = (
-    [($homebrew_prefix | path join "share" "zsh" "site-functions")]
+    [$zsh_fpath_fixups ($homebrew_prefix | path join "share" "zsh" "site-functions")]
     ++ $zsh_default_fpath
     | uniq
     | str join ":"
