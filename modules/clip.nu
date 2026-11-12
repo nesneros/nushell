@@ -8,7 +8,7 @@
 # and copies it to the clipboard.
 #
 # Snippets live in $env.XDG_DATA_HOME/clip (default: ~/.local/share/clip).
-use xdg.nu "xdg data-dir"
+use base.nu "xdg data-dir"
 
 export def main [
     name?: string # snippet name

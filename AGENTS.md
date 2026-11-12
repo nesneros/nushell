@@ -37,17 +37,16 @@ Nushell loads files in a specific order:
 
 3. **`autoload/` Directory (Third)**
    - Nushell automatically evaluates all `.nu` files in `autoload/` alphabetically after `config.nu`.
-   - `_mise.nu`: Starts with an underscore (`_`) to ensure it runs first. Sources `generated/mise.nu` and invokes `mise_hook` so subsequent scripts and plugins can resolve mise-managed binaries.
-   - `generated.nu`: Sourced after `_mise.nu`. Conditionally sources `generated/init.nu`.
+   - `_load-generated.nu`: Starts with an underscore (`_`) to ensure it runs first. Sources `generated/mise.nu`, invokes `mise_hook` (so subsequent scripts and plugins can resolve mise-managed binaries), then sources `generated/init.nu`. `config.nu` guarantees both files exist by then (see `setup.nu` below).
    - `prompt.nu`: Custom git-aware prompt using `nu_plugin_gstat`.
    - `alias.nu`: Command aliases (e.g., `alias week = ^date +%V`).
    - `db.nu`: SQLite and database helper commands (`db get-table`, `summarize-binary`).
 
 4. **`setup.nu` (Maintenance)**
-   - One-time or on-demand generator script.
-   - Run manually via `nu ($nu.default-config-dir | path join setup.nu)`.
+   - Generator script. `config.nu` runs it automatically on first startup, when `generated/init.nu` doesn't exist yet.
+   - Re-run manually via `nu ($nu.default-config-dir | path join setup.nu)` after upgrading zsh/Homebrew or changing `zsh-functions/`.
    - Appends startup hooks to `generated/init.nu` for tools like `atuin`, `carapace`, and `zoxide`, and registers Nushell plugins (`gstat`, `port_extension`).
-   - Caches zsh's default `fpath` in `generated/zsh-fpath.txt` (read by `config.nu` instead of spawning `zsh -f` every startup). Re-run after upgrading zsh/Homebrew or changing `zsh-functions/`.
+   - Caches zsh's default `fpath` in `generated/zsh-fpath.txt` (read by `config.nu` instead of spawning `zsh -f` every startup), and brew's prefix in `generated/homebrew-prefix.txt` (read by `modules/homebrew.nu` instead of spawning `brew --prefix` every startup).
 
 ---
 
@@ -70,14 +69,15 @@ Nushell loads files in a specific order:
 - **Git & Ignored Files:**
   - The following files are in `.gitignore` and must never be tracked:
     - `env.nu`
-    - `generated/` (`init.nu`, `mise.nu`, `zsh-fpath.txt`)
+    - `generated/` (`init.nu`, `mise.nu`, `zsh-fpath.txt`, `homebrew-prefix.txt`)
     - `history.txt`
     - `plugin.msgpackz`
     - `.vscode/`
 
 - **Verification:**
-  - After making syntax or configuration changes, verify them non-interactively:
+  - `nu -c '<command>'` does NOT load `config.nu`/`env.nu` — it runs `<command>` in a bare Nushell process, so checks like `nu -c '$env.PATH'` pass even if `config.nu` is broken.
+  - To actually exercise `config.nu` non-interactively, source it first:
     ```sh
-    nu -c '$env.PATH'
-    nu -c 'echo "Configuration loaded cleanly"'
+    nu -c 'source config.nu; echo "Configuration loaded cleanly"'
+    nu -c 'source config.nu; $env.PATH'
     ```

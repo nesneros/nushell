@@ -12,7 +12,14 @@
 # options using:
 #     config nu --doc | nu-highlight | less -R
 
-use modules/xdg.nu *
+# Run setup.nu on first use, so the rest of this file can assume the
+# generated/ files it produces already exist.
+let generated_init_file = ($nu.default-config-dir | path join "generated" "init.nu")
+if not ($generated_init_file | path exists) {
+    ^nu ($nu.default-config-dir | path join "setup.nu")
+}
+
+use modules/base.nu *
 
 # Set zoxide data directory
 $env._ZO_DATA_DIR = xdg data-dir "zoxide"
@@ -24,6 +31,7 @@ use modules/git.nu *
 use modules/search.nu *
 
 gabbr add J '| from json -o'
+gabbr add HI '| nu-highlight'
 
 # abbreviations
 $env.config = {
@@ -47,32 +55,11 @@ $env.config = {
     use_kitty_protocol: true
 }
 
-# Init Homebrew
 use std/util "path add"
-
-const homebrew_prefix = "/opt/homebrew"
-
-$env.HOMEBREW_PREFIX = $homebrew_prefix
-
-# Prepend directories to a `:`-separated environment variable such as MANPATH
-# or INFOPATH, keeping the existing entries and dropping duplicates.
-def --env "prepend-path-env" [name: string, ...paths: string] {
-    let existing = (
-        $env
-        | get -o $name
-        | default ""
-        | split row ":"
-        | where {|p| $p != "" }
-    )
-    load-env { ($name): ($paths | append $existing | uniq | str join ":") }
-}
-
-prepend-path-env MANPATH ($homebrew_prefix | path join "share" "man")
-prepend-path-env INFOPATH ($homebrew_prefix | path join "share" "info")
+use modules/homebrew.nu *
 
 # Update PATH
 path add ($nu.home-dir | path join "bin") $env.XDG_BIN_HOME ($nu.home-dir | path join "share" "bin")
-path add ($homebrew_prefix | path join "bin") ($homebrew_prefix | path join "sbin")
 path add "/usr/local/bin/" "/usr/local/sbin/"
 
 # Dedup PATH and drop dirs that no longer exist, before baking it below.
@@ -92,13 +79,13 @@ def carapace_completer [place: record] {
 # zsh-functions/_mole), so it goes first.
 #
 # zsh's default fpath is stable for a given zsh/Homebrew install, so setup.nu
-# caches it in generated/zsh-fpath.txt. Run setup.nu if it is missing;
-# re-run it after upgrading zsh or Homebrew.
+# caches it in generated/zsh-fpath.txt. Re-run setup.nu after upgrading zsh
+# or Homebrew, or after changing zsh-functions/.
 let zsh_fpath_fixups = ($nu.default-config-dir | path join "zsh-functions")
 let zsh_fpath_cache = ($nu.default-config-dir | path join "generated" "zsh-fpath.txt")
 let zsh_default_fpath = (open --raw $zsh_fpath_cache | lines)
 $env.FPATH = (
-    [$zsh_fpath_fixups ($homebrew_prefix | path join "share" "zsh" "site-functions")]
+    [$zsh_fpath_fixups ($env.HOMEBREW_PREFIX | path join "share" "zsh" "site-functions")]
     ++ $zsh_default_fpath
     | uniq
     | str join ":"
@@ -113,7 +100,7 @@ $env.config.completions.external = {
 }
 
 # nu has no live `eval`, so mise's init bakes a PATH snapshot. Regenerate it
-# last, here; autoload/_mise.nu sources it after this file fully runs.
+# last, here; autoload/_load-generated.nu sources it after this file fully runs.
 if not (which mise | where type == external | is-empty) {
     let mise_init_file = $nu.default-config-dir | path join "generated" "mise.nu"
     mkdir ($mise_init_file | path dirname)

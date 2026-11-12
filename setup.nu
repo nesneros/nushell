@@ -1,17 +1,18 @@
 # setup.nu
 #
-# One-time setup for this Nushell config. Run it once:
-#   nu ($nu.default-config-dir | path join setup.nu)
+# One-time setup for this Nushell config. config.nu runs this automatically
+# on the first startup, when generated/init.nu doesn't exist yet.
 #
 # It appends startup scripts into generated/init.nu when the programs are
-# installed. autoload/generated.nu sources that file on later startups,
-# after autoload/_mise.nu.
+# installed. autoload/_load-generated.nu sources that file on later startups.
 #
-# It also caches zsh's default fpath in generated/zsh-fpath.txt, which
-# config.nu reads instead of spawning `zsh -f` on every startup.
+# It also caches zsh's default fpath in generated/zsh-fpath.txt, and brew's
+# prefix in generated/homebrew-prefix.txt, which config.nu and modules/homebrew.nu
+# read instead of spawning `zsh -f` or `brew --prefix` on every startup.
 #
-# Run it again only when you want to refresh the generated script, after
-# upgrading zsh/Homebrew, or after changing zsh-functions/.
+# Re-run it manually to refresh the generated script, after upgrading
+# zsh/Homebrew, or after changing zsh-functions/:
+#   nu ($nu.default-config-dir | path join setup.nu)
 #
 # mise is handled separately in config.nu, regenerated fresh every shell
 # start instead of cached here.
@@ -50,6 +51,21 @@ def generate-zsh-fpath [] {
     print $"Wrote ($zsh_fpath_file)"
 }
 
+const homebrew_prefix_file = ($nu.default-config-dir | path join "generated" "homebrew-prefix.txt")
+
+# Cache `brew --prefix`, which is stable for a given install and slow to
+# shell out to on every startup.
+def generate-homebrew-prefix [] {
+    if not (installed brew) {
+        print "brew is not installed; skipped"
+        return
+    }
+
+    mkdir ($homebrew_prefix_file | path dirname)
+    ^brew --prefix | str trim | save -f $homebrew_prefix_file
+    print $"Wrote ($homebrew_prefix_file)"
+}
+
 # Register a nu plugin. Checks next to the `nu` binary first (eg. "gstat"),
 # then falls back to `mise which` (eg. a cargo-backend mise tool).
 def add-plugin [name: string] {
@@ -85,6 +101,7 @@ def main [] {
     generate carapace _carapace nushell
     generate zoxide init nushell
     generate-zsh-fpath
+    generate-homebrew-prefix
     add-plugin formats
     add-plugin gstat
     add-plugin skim
