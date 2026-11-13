@@ -28,6 +28,7 @@ use modules/clip.nu
 use modules/epoch.nu
 use modules/gabbr.nu *
 use modules/git.nu *
+use modules/homebrew.nu
 use modules/search.nu *
 
 gabbr add J '| from json -o'
@@ -56,7 +57,6 @@ $env.config = {
 }
 
 use std/util "path add"
-use modules/homebrew.nu *
 
 # Update PATH
 path add ($nu.home-dir | path join "bin") $env.XDG_BIN_HOME ($nu.home-dir | path join "share" "bin")
