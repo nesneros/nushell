@@ -70,25 +70,6 @@ def carapace_completer [place: record] {
     carapace $place.command.0 nushell ...$place.command | from json
 }
 
-# Carapace's zsh bridge runs `zsh -f` (no rc files), so the only fpath it sees
-# is $env.FPATH. Note that setting FPATH replaces zsh's built-in fpath, so keep
-# zsh's own function dirs and prepend Homebrew's zsh completions (e.g. the
-# _opencode definition); without this the bridge falls back to file completion.
-#
-# zsh's default fpath is stable for a given zsh/Homebrew install, so setup.nu
-# caches it in generated/zsh-fpath.txt. Re-run setup.nu after upgrading zsh
-# or Homebrew.
-let zsh_fpath_cache = ($nu.default-config-dir | path join "generated" "zsh-fpath.txt")
-let zsh_default_fpath = (open --raw $zsh_fpath_cache | lines)
-$env.FPATH = (
-    [($env.HOMEBREW_PREFIX | path join "share" "zsh" "site-functions")]
-    ++ $zsh_default_fpath
-    | uniq
-    | str join ":"
-)
-
-# $env.CARAPACE_BRIDGES = 'zsh'
-
 $env.config.completions.external = {
     enable: true
     max_results: 100

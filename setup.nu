@@ -6,15 +6,13 @@
 # It appends startup scripts into generated/init.nu when the programs are
 # installed. autoload/_load-generated.nu sources that file on later startups.
 #
-# It also caches zsh's default fpath in generated/zsh-fpath.txt, and brew's
-# prefix in generated/homebrew-prefix.txt, which config.nu and modules/homebrew.nu
-# read instead of spawning `zsh -f` or `brew --prefix` on every startup.
+# It also caches brew's prefix in generated/homebrew-prefix.txt, which
+# modules/homebrew.nu reads instead of spawning `brew --prefix` on every startup.
 #
 # It also writes generated/completions.nu: `generate completions` output for
 # each command in completion_commands, sourced by autoload/_load-generated.nu.
 #
-# Re-run it manually to refresh the generated script, after upgrading
-# zsh/Homebrew:
+# Re-run it manually to refresh the generated script, after upgrading Homebrew:
 #   nu ($nu.default-config-dir | path join setup.nu)
 #
 # mise is handled separately in config.nu, regenerated fresh every shell
@@ -39,21 +37,6 @@ def installed [name: string] {
     not (which $name | where type == external | is-empty)
 }
 
-const zsh_fpath_file = ($nu.default-config-dir | path join "generated" "zsh-fpath.txt")
-
-# Cache the fpath zsh starts with when no rc files are read. It is stable for a
-# given zsh/Homebrew install, so config.nu only probes as a fallback.
-def generate-zsh-fpath [] {
-    if not (installed zsh) {
-        print "zsh is not installed; skipped"
-        return
-    }
-
-    mkdir ($zsh_fpath_file | path dirname)
-    ^env -u FPATH zsh -f -c 'print -rl -- $fpath' | save -f $zsh_fpath_file
-    print $"Wrote ($zsh_fpath_file)"
-}
-
 const homebrew_prefix_file = ($nu.default-config-dir | path join "generated" "homebrew-prefix.txt")
 
 # Cache `brew --prefix`, which is stable for a given install and slow to
@@ -71,9 +54,9 @@ def generate-homebrew-prefix [] {
 
 const completions_file = ($nu.default-config-dir | path join "generated" "completions.nu")
 
-# Commands whose completions aren't already covered well by the
-# carapace/zsh bridge, generated instead via nu's own `generate completions`
-# (from the command's carapace/fish/zsh completions, man page, or --help).
+# Commands whose completions aren't already covered well by carapace's own
+# specs, generated instead via nu's own `generate completions` (from the
+# command's carapace/fish/zsh completions, man page, or --help).
 # Add a command name here to extend; skipped if it isn't installed.
 const completion_commands = [mole]
 
@@ -139,7 +122,6 @@ def main [] {
     generate atuin init nu -- --disable-up-arrow
     generate carapace _carapace nushell
     generate zoxide init nushell
-    generate-zsh-fpath
     generate-homebrew-prefix
     generate-completions-file
     add-plugin formats
