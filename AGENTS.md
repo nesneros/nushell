@@ -48,6 +48,7 @@ Nushell loads files in a specific order:
    - Appends startup hooks to `generated/init.nu` for tools like `atuin`, `carapace`, and `zoxide`, and registers Nushell plugins (`gstat`, `port_extension`).
    - Caches brew's prefix in `generated/homebrew-prefix.txt` (read by `modules/homebrew.nu` instead of spawning `brew --prefix` every startup).
    - Writes `generated/completions.nu`: `generate completions` output for each command in `completion_commands` (currently just `mole`, whose Homebrew zsh completion has a bug), sourced by `autoload/_load-generated.nu`.
+   - Installs local Git hooks: sets `core.hooksPath` to this repository's `.git/hooks`, writes a `post-merge` hook that re-runs `setup.nu` after a pull, and symlinks hooks inherited from the shared `~/my-zcomet/githooks` directory (e.g. `commit-msg`) so global hooks keep working. The hook body lives in `setup.nu` as `post_merge_hook`; `.git/hooks` is not tracked.
 
 ---
 
