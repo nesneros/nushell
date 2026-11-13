@@ -44,9 +44,10 @@ Nushell loads files in a specific order:
 
 4. **`setup.nu` (Maintenance)**
    - Generator script. `config.nu` runs it automatically on first startup, when `generated/init.nu` doesn't exist yet.
-   - Re-run manually via `nu ($nu.default-config-dir | path join setup.nu)` after upgrading zsh/Homebrew or changing `zsh-functions/`.
+   - Re-run manually via `nu ($nu.default-config-dir | path join setup.nu)` after upgrading zsh/Homebrew.
    - Appends startup hooks to `generated/init.nu` for tools like `atuin`, `carapace`, and `zoxide`, and registers Nushell plugins (`gstat`, `port_extension`).
    - Caches zsh's default `fpath` in `generated/zsh-fpath.txt` (read by `config.nu` instead of spawning `zsh -f` every startup), and brew's prefix in `generated/homebrew-prefix.txt` (read by `modules/homebrew.nu` instead of spawning `brew --prefix` every startup).
+   - Writes `generated/completions.nu`: `generate completions` output for each command in `completion_commands` (currently just `mole`, whose Homebrew zsh completion has a bug), sourced by `autoload/_load-generated.nu`.
 
 ---
 
@@ -69,7 +70,7 @@ Nushell loads files in a specific order:
 - **Git & Ignored Files:**
   - The following files are in `.gitignore` and must never be tracked:
     - `env.nu`
-    - `generated/` (`init.nu`, `mise.nu`, `zsh-fpath.txt`, `homebrew-prefix.txt`)
+    - `generated/` (`init.nu`, `mise.nu`, `zsh-fpath.txt`, `homebrew-prefix.txt`, `completions.nu`)
     - `history.txt`
     - `plugin.msgpackz`
     - `.vscode/`

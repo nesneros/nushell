@@ -75,23 +75,19 @@ def carapace_completer [place: record] {
 # zsh's own function dirs and prepend Homebrew's zsh completions (e.g. the
 # _opencode definition); without this the bridge falls back to file completion.
 #
-# zsh-functions/ holds fix-ups that shadow Homebrew's originals (see
-# zsh-functions/_mole), so it goes first.
-#
 # zsh's default fpath is stable for a given zsh/Homebrew install, so setup.nu
 # caches it in generated/zsh-fpath.txt. Re-run setup.nu after upgrading zsh
-# or Homebrew, or after changing zsh-functions/.
-let zsh_fpath_fixups = ($nu.default-config-dir | path join "zsh-functions")
+# or Homebrew.
 let zsh_fpath_cache = ($nu.default-config-dir | path join "generated" "zsh-fpath.txt")
 let zsh_default_fpath = (open --raw $zsh_fpath_cache | lines)
 $env.FPATH = (
-    [$zsh_fpath_fixups ($env.HOMEBREW_PREFIX | path join "share" "zsh" "site-functions")]
+    [($env.HOMEBREW_PREFIX | path join "share" "zsh" "site-functions")]
     ++ $zsh_default_fpath
     | uniq
     | str join ":"
 )
 
-$env.CARAPACE_BRIDGES = 'zsh'
+# $env.CARAPACE_BRIDGES = 'zsh'
 
 $env.config.completions.external = {
     enable: true

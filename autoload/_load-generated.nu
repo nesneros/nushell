@@ -8,3 +8,15 @@ mise_hook
 
 const generated_init_file = ($nu.default-config-dir | path join "generated" "init.nu")
 source $generated_init_file
+
+# Unlike init.nu above, this one isn't guaranteed to exist — setup.nu skips
+# writing it when completion_commands is empty or none of it is installed.
+const completions_file = ($nu.default-config-dir | path join "generated" "completions.nu")
+const completions_init = (
+    if ($completions_file | path exists) {
+        ($completions_file | path expand)
+    } else {
+        null
+    }
+)
+source $completions_init
