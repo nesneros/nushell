@@ -10,6 +10,11 @@ use base.nu "xdg data-dir"
 # and copies it to the clipboard.
 #
 # Snippets live in $env.XDG_DATA_HOME/clip (default: ~/.local/share/clip).
+@example "Copy stdin to the clipboard" { "hello" | clip }
+@example "Save stdin as a named snippet and copy it" { "hello" | clip greeting }
+@example "Print a saved snippet" { clip greeting }
+@example "List saved snippets" { clip --list }
+@example "Delete a saved snippet" { clip --delete greeting }
 export def main [
     name?: string # snippet name
     --list (-l) # list saved snippets as a table
