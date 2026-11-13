@@ -1,3 +1,5 @@
+use base.nu "xdg data-dir"
+
 # Copy between the clipboard and stdin/stdout, and store named snippets.
 #
 # With no name and nothing piped on stdin, prints the clipboard.
@@ -8,8 +10,6 @@
 # and copies it to the clipboard.
 #
 # Snippets live in $env.XDG_DATA_HOME/clip (default: ~/.local/share/clip).
-use base.nu "xdg data-dir"
-
 export def main [
     name?: string # snippet name
     --list (-l) # list saved snippets as a table
