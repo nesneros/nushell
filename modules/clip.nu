@@ -8,10 +8,10 @@
 # string.
 #
 # Named snippets keep the same NUON encoding in $env.XDG_DATA_HOME/clip
-# (default: ~/.local/share/clip), and plain-text files written by
-# `clip_legacy` are still readable. Snippet names are 1-64 characters of
-# letters, digits, ".", "_" or "-", starting with a letter or digit, with dots
-# separating parts (no leading, trailing, or doubled dots).
+# (default: ~/.local/share/clip). Older plain-text snippet files are still
+# readable. Snippet names are 1-64 characters of letters, digits, ".", "_" or
+# "-", starting with a letter or digit, with dots separating parts (no
+# leading, trailing, or doubled dots).
 #
 # Typed access uses `osascript` (JavaScript for Automation) and AppKit. No
 # other dependencies. Values are passed to osascript through argv, so a single
@@ -165,7 +165,7 @@ def snippet-dir [] {
     $dir
 }
 
-# Snippet files hold NUON, but tolerate the plain text written by clip_legacy.
+# Snippet files hold NUON, but tolerate plain-text files from older snippets.
 def parse-snippet [data: string] {
     try { $data | from nuon } catch { $data }
 }

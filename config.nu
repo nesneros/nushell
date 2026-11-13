@@ -26,13 +26,13 @@ $env._ZO_DATA_DIR = xdg data-dir "zoxide"
 
 use modules/clip.nu
 use modules/epoch.nu
-use modules/gabbr.nu *
+# use modules/gabbr.nu *
 use modules/git.nu *
 use modules/homebrew.nu
 use modules/search.nu *
 
-gabbr add J '| from json -o'
-gabbr add HI '| nu-highlight'
+# gabbr add J '| from json -o'
+# gabbr add HI '| nu-highlight'
 
 # abbreviations
 $env.config = {
