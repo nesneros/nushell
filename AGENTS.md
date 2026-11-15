@@ -43,7 +43,7 @@ Nushell loads files in a specific order:
    - `db.nu`: SQLite and database helper commands (`db get-table`, `summarize-binary`).
 
 4. **`setup.nu` (Maintenance)**
-   - Generator script. `config.nu` runs it automatically on first startup, when `generated/init.nu` doesn't exist yet.
+   - Generator script. `config.nu` runs it automatically on first startup (when `generated/init.nu` doesn't exist) and after a Nushell upgrade (the version is recorded in `generated/nu-version.txt`), so bundled plugins are re-registered at their new versioned paths. It also probes every registered plugin and warns about ones built for a different Nushell version, which setup cannot upgrade.
    - Re-run manually via `nu ($nu.default-config-dir | path join setup.nu)` after upgrading Homebrew.
    - Appends startup hooks to `generated/init.nu` for tools like `atuin`, `carapace`, and `zoxide`, and registers Nushell plugins (`formats`, `gstat`, `skim`).
    - Caches brew's prefix in `generated/homebrew-prefix.txt` (read by `modules/homebrew.nu` instead of spawning `brew --prefix` every startup).
@@ -71,7 +71,7 @@ Nushell loads files in a specific order:
 - **Git & Ignored Files:**
   - The following files are in `.gitignore` and must never be tracked:
     - `env.nu`
-    - `generated/` (`init.nu`, `mise.nu`, `homebrew-prefix.txt`, `completions.nu`)
+    - `generated/` (`init.nu`, `mise.nu`, `homebrew-prefix.txt`, `completions.nu`, `nu-version.txt`)
     - `history.txt`
     - `plugin.msgpackz`
     - `.vscode/`

@@ -13,9 +13,17 @@
 #     config nu --doc | nu-highlight | less -R
 
 # Run setup.nu on first use, so the rest of this file can assume the
-# generated/ files it produces already exist.
+# generated/ files it produces already exist. Also re-run it after a Nushell
+# upgrade: Homebrew moves the bundled plugins to a new versioned path, and
+# setup.nu re-registers them there (and warns about any that can't be used).
 let generated_init_file = ($nu.default-config-dir | path join "generated" "init.nu")
-if not ($generated_init_file | path exists) {
+let nu_version_file = ($nu.default-config-dir | path join "generated" "nu-version.txt")
+let setup_needed = (
+    (not ($generated_init_file | path exists))
+    or (not ($nu_version_file | path exists))
+    or ((open --raw $nu_version_file | str trim) != (version | get version))
+)
+if $setup_needed {
     ^nu ($nu.default-config-dir | path join "setup.nu")
 }
 
@@ -30,7 +38,7 @@ use modules/epoch.nu
 use modules/git.nu *
 use modules/homebrew.nu
 use modules/port.nu *
-# use modules/search.nu *
+use modules/search.nu *
 
 # gabbr add J '| from json -o'
 # gabbr add HI '| nu-highlight'

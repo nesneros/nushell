@@ -1,6 +1,7 @@
 const rg_flags = ["--smart-case" "--no-heading" "--line-number" "--with-filename"]
 
 # ripgrep with sane default flags, preferring ripgrep-all (`rga`) when installed.
+@complete external
 export def --wrapped rg [
     ...args # arguments passed straight through to rg/rga
 ] {

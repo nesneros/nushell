@@ -1,7 +1,9 @@
 # setup.nu
 #
 # One-time setup for this Nushell config. config.nu runs this automatically
-# on the first startup, when generated/init.nu doesn't exist yet.
+# on the first startup, when generated/init.nu doesn't exist yet, and again
+# after a Nushell upgrade (the version is recorded in generated/nu-version.txt),
+# so bundled plugins are re-registered at their new paths.
 #
 # It appends startup scripts into generated/init.nu when the programs are
 # installed. autoload/_load-generated.nu sources that file on later startups.
@@ -26,6 +28,11 @@
 # start instead of cached here.
 
 const generated_file = ($nu.default-config-dir | path join "generated" "init.nu")
+
+# Written at the end of setup so config.nu can detect a Nushell upgrade: the
+# bundled plugins move to a new versioned path, and their registry entries must
+# be refreshed (see add-plugin).
+const nu_version_file = ($nu.default-config-dir | path join "generated" "nu-version.txt")
 
 # Run `program ...args` and append stdout to generated/init.nu.
 # Skips the program when it is not installed.
@@ -65,7 +72,7 @@ const completions_file = ($nu.default-config-dir | path join "generated" "comple
 # specs, generated instead via nu's own `generate completions` (from the
 # command's carapace/fish/zsh completions, man page, or --help).
 # Add a command name here to extend; skipped if it isn't installed.
-const completion_commands = [mole]
+const completion_commands = [mole,colima]
 
 # Write `generate completions` output for every installed command in
 # completion_commands into one file (all extern definitions in one place,
@@ -131,6 +138,35 @@ def add-plugin [name: string] {
     } else {
         print $"($name) already registered"
     }
+}
+
+# Plugins are compiled against a specific Nushell plugin protocol, so one built
+# for another Nu version fails at the handshake. `plugin add` performs that
+# handshake, so probe each registered plugin against a throwaway registry and
+# warn about the ones that can't be used. This matters for third-party plugins
+# (eg. mise-installed ones), which setup can't upgrade by itself; bundled
+# plugins are already corrected by add-plugin above.
+def check-plugins [] {
+    let scratch = ($nu.temp-dir | path join $"nu-plugin-check-($nu.pid).msgpackz")
+    ^rm -f $scratch
+
+    let nu_version = (version | get version)
+    for plugin in (plugin list | select name version filename) {
+        let failure = (try {
+            plugin add $plugin.filename --plugin-config $scratch
+            null
+        } catch {|err|
+            ($err.msg | lines | first)
+        })
+
+        if $failure != null {
+            print $"WARNING: plugin ($plugin.name) ($plugin.version) does not work with Nushell ($nu_version)"
+            print $"  ($failure)"
+            print $"  reinstall it for Nushell ($nu_version), or remove it with: plugin rm ($plugin.name)"
+        }
+    }
+
+    ^rm -f $scratch
 }
 
 # --- Git hooks -------------------------------------------------------------
@@ -262,5 +298,9 @@ def main [
     add-plugin formats
     add-plugin gstat
     add-plugin skim
+    check-plugins
     install-git-hooks
+
+    version | get version | save -f $nu_version_file
+    print $"Wrote ($nu_version_file)"
 }
