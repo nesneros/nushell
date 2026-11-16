@@ -33,6 +33,7 @@ use modules/base.nu *
 $env._ZO_DATA_DIR = xdg data-dir "zoxide"
 
 use modules/clip.nu
+use modules/docker.nu *
 use modules/epoch.nu
 # use modules/gabbr.nu *
 use modules/git.nu *
