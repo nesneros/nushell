@@ -96,7 +96,10 @@ def generate-completions-file [] {
 }
 
 # Register a nu plugin. Checks next to the `nu` binary first (eg. "gstat"),
-# then falls back to `mise which` (eg. a cargo-backend mise tool).
+# then falls back to `mise which` (eg. a cargo-backend mise tool). Re-registers
+# when the recorded path no longer matches: Homebrew upgrades move the keg to a
+# new versioned Cellar directory, leaving the old registry entry pointing at a
+# binary that no longer exists (which silently breaks eg. the prompt's gstat).
 def add-plugin [name: string] {
     let bundled_path = ($nu.current-exe | path dirname | path join $"nu_plugin_($name)")
 
@@ -114,9 +117,17 @@ def add-plugin [name: string] {
         return
     }
 
-    if (plugin list | where name == $name | is-empty) {
+    # `plugin add` stores the canonical path (symlinks resolved), so compare
+    # against that rather than the PATH symlink we may have been handed.
+    let canonical_path = (do -i { ^realpath $plugin_path | str trim } | default $plugin_path)
+    let registered = (plugin list | where name == $name)
+
+    if ($registered | is-empty) {
         plugin add $plugin_path
         print $"Registered ($name)"
+    } else if ($registered.0.filename? | default "") != $canonical_path {
+        plugin add $plugin_path
+        print $"Re-registered ($name): ($registered.0.filename?) -> ($canonical_path)"
     } else {
         print $"($name) already registered"
     }
@@ -251,6 +262,5 @@ def main [
     add-plugin formats
     add-plugin gstat
     add-plugin skim
-    add-plugin port_extension
     install-git-hooks
 }

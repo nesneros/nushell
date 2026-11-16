@@ -16,7 +16,7 @@ $env.config.menus ++= [{
     source: { |token|
         let ports = (
             port list | where state == LISTEN | group-by pid | transpose pid rows
-            | update rows {|r| $r.rows | get local_port | uniq | sort | str join ","}
+            | update rows {|r| $r.rows | get port | compact | uniq | sort | str join ","}
         )
         ps | join --left $ports pid | each {|p|
             let port_str = if $p.rows == null { "" } else { $"  port:($p.rows)" }

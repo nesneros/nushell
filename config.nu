@@ -29,7 +29,8 @@ use modules/epoch.nu
 # use modules/gabbr.nu *
 use modules/git.nu *
 use modules/homebrew.nu
-use modules/search.nu *
+use modules/port.nu *
+# use modules/search.nu *
 
 # gabbr add J '| from json -o'
 # gabbr add HI '| nu-highlight'
