@@ -1,28 +1,22 @@
-# Typed clipboard for Nushell on macOS, plus named snippets stored as NUON.
+use base.nu
+
+# Typed clipboard for Nushell on macOS, plus named snippets stored in SQLite.
 #
-# Copying writes two representations to the pasteboard: readable UTF-8 text
-# (so other apps paste something sensible) and the value as NUON under a
-# custom UTI (so Nushell can recover the exact value and its types). Pasting
-# prefers the NUON representation, so filesizes, durations, datetimes, and
-# nested records survive the round trip. A plain-text clipboard pastes as a
-# string.
+# Copies go to the pasteboard both as plain UTF-8 text and as NUON under a
+# custom UTI, so types like filesizes and datetimes survive the round trip.
+# Pasting prefers the NUON side; a plain-text clipboard pastes as a string.
 #
-# Named snippets keep the same NUON encoding in $env.XDG_DATA_HOME/clip
-# (default: ~/.local/share/clip). Older plain-text snippet files are still
-# readable. Snippet names are 1-64 characters of letters, digits, ".", "_" or
-# "-", starting with a letter or digit, with dots separating parts (no
-# leading, trailing, or doubled dots).
+# Named snippets live in $env.XDG_DATA_HOME/clip.sqlite, one row per name.
+# Each row stores a `format` ("nuon" or "text", for decoding) and a `kind`
+# (just `describe`'s output, for `--list` display). Separate from the plain
+# files `clip_legacy` keeps under $env.XDG_DATA_HOME/clip. Names are 1-64
+# chars of letters/digits/./_/-, starting with a letter or digit.
 #
-# Typed access uses `osascript` (JavaScript for Automation) and AppKit. No
-# other dependencies. Values are passed to osascript through argv, so a single
-# copy is capped at roughly 500 kB of serialized data.
+# Uses `osascript` (JavaScript for Automation) + AppKit, no other deps.
+# Values go through osascript's argv, capping a copy at ~500 kB.
 #
-# With no name and nothing piped on stdin, pastes the clipboard.
-# With no name and stdin piped, copies stdin to the clipboard.
-#
-# With a name and nothing piped, pastes the saved snippet and copies it to the
-# clipboard. With a name and stdin piped, saves stdin as that snippet and
-# copies it to the clipboard.
+# No name, nothing piped: pastes the clipboard. No name, piped: copies it.
+# A name, nothing piped: pastes that snippet. A name, piped: saves it.
 @example "Copy a string to the clipboard" { "hello" | clip }
 @example "Copy structured data, keeping its types" { {size: 1mb, when: (date now)} | clip }
 @example "Paste the clipboard back into Nushell" { clip }
@@ -35,33 +29,20 @@ export def main [
     --list (-l) # list saved snippets as a table
     --delete (-d): string # delete a named snippet
 ] {
-    let dir = snippet-dir
+    let db = clip-db
 
     if $list {
-        return (
-            ls $dir
-            | select name size modified
-            | insert type {|row|
-                try {
-                    open --raw $row.name | from nuon | describe
-                } catch {
-                    "text"
-                }
-            }
-            | update name { path basename }
-            | sort-by name
-        )
+        return (sqlite-list $db)
     }
 
     if $delete != null {
         check-name $delete
-        rm -f ($dir | path join $delete)
+        sqlite-delete $db $delete
         print $"Deleted '($delete)'"
         return
     }
 
-    # Internal pipelines never touch the OS stdin, so use `$in` rather than
-    # `is-terminal --stdin` to tell whether anything was piped in.
+    # `$in`, not `is-terminal --stdin`: internal pipelines never touch OS stdin.
     let input = $in
     let piped = ($input | describe) != "nothing"
 
@@ -74,19 +55,22 @@ export def main [
     }
 
     check-name $name
-    let file = $dir | path join $name
 
     if $piped {
-        # Ragged tables and closures cannot always be NUON-serialized; fall
-        # back to their text form so the snippet is still usable.
-        let data = (try { $input | to nuon } catch { $input | to text --no-newline })
-        $data | save -f $file
+        # Ragged tables/closures can't always serialize to NUON; fall back to text.
+        let row = (try {
+            {format: "nuon", value: ($input | to nuon)}
+        } catch {
+            {format: "text", value: ($input | to text --no-newline)}
+        })
+        sqlite-upsert $db $name ($row | insert kind ($input | describe))
         to-clipboard $input
     } else {
-        if not ($file | path exists) {
-            error make { msg: $"Invalid name: ($name)" }
+        let row = sqlite-get $db $name
+        if $row == null {
+            error make { msg: $"No snippet named '($name)'" }
         }
-        let value = parse-snippet (open --raw $file)
+        let value = if $row.format == "nuon" { $row.value | from nuon } else { $row.value }
         to-clipboard $value
         $value
     }
@@ -94,9 +78,8 @@ export def main [
 
 # Set both pasteboard representations for a value.
 #
-# Nushell consts must be declared before the def that captures them, so the
-# JXA scripts live inside their helpers (as `let`) instead of at file scope;
-# that keeps `main` at the top of the module.
+# The JXA script is a `let`, not a file-scope `const`, so `main` can stay
+# at the top of the module (consts must be declared before their use).
 def to-clipboard [value: any] {
     let script = '
 ObjC.import("AppKit");
@@ -157,25 +140,70 @@ function run(argv) {
     $found.text
 }
 
-# Directory holding named snippets, created on demand.
-def snippet-dir [] {
-    let base = $env.XDG_DATA_HOME? | default ($nu.home-dir | path join ".local" "share")
-    let dir = $base | path join "clip"
-    mkdir $dir
-    $dir
+# Path to the snippet database, creating it on first use.
+def clip-db [] {
+    mkdir $env.XDG_DATA_HOME
+    let file = $env.XDG_DATA_HOME | path join "clip.sqlite"
+    if not ($file | path exists) {
+        # `open`/`query db` need a real SQLite file to act on, and this is the
+        # only dependency-free way to conjure one: write a throwaway table,
+        # then drop it. (Not `stor`, which shares one in-memory db session-wide.)
+        [[x]; [1]] | into sqlite $file --table-name bootstrap
+        open $file | query db "DROP TABLE bootstrap"
+    }
+    open $file | query db "
+        CREATE TABLE IF NOT EXISTS snippets (
+            name TEXT PRIMARY KEY,
+            format TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            value TEXT NOT NULL,
+            modified TEXT NOT NULL
+        )
+    "
+    $file
 }
 
-# Snippet files hold NUON, but tolerate plain-text files from older snippets.
-def parse-snippet [data: string] {
-    try { $data | from nuon } catch { $data }
+# List saved snippets as a table of name, size, kind and modified.
+def sqlite-list [db: path] {
+    open $db
+    | query db "SELECT name, length(CAST(value AS BLOB)) as size, kind, modified FROM snippets ORDER BY name"
+    | update size { into filesize }
+    | update modified { into datetime }
 }
 
-# Snippet names are a restricted slug: 1-64 characters of ASCII letters,
-# digits, ".", "_" or "-", starting with a letter or digit. Dots must separate
-# parts, so no leading, trailing, or doubled dots. That keeps names easy to
-# type, avoids hidden files and CLI flag look-alikes, and rules out path
-# separators and dots-only names that Nushell's path expansion would resolve
-# outside the snippet directory.
+# Fetch a snippet's format and value by name, or null if there is no such row.
+def sqlite-get [db: path, name: string] {
+    let rows = (open $db | query db "SELECT format, value FROM snippets WHERE name = :name" -p {name: $name})
+    if ($rows | is-empty) { null } else { $rows | first }
+}
+
+type SnippetRow = record<format: string, kind: string, value: string>
+
+# Insert a snippet, or replace it if the name is already taken.
+def sqlite-upsert [db: path, name: string, row: SnippetRow] {
+    open $db | query db "
+        INSERT INTO snippets (name, format, kind, value, modified)
+        VALUES (:name, :format, :kind, :value, :modified)
+        ON CONFLICT(name) DO UPDATE SET
+            format = excluded.format,
+            kind = excluded.kind,
+            value = excluded.value,
+            modified = excluded.modified
+    " -p {
+        name: $name
+        format: $row.format
+        kind: $row.kind
+        value: $row.value
+        modified: (date now | format date "%+")
+    } | ignore
+}
+
+# Delete a snippet by name. A no-op if the name doesn't exist.
+def sqlite-delete [db: path, name: string] {
+    open $db | query db "DELETE FROM snippets WHERE name = :name" -p {name: $name} | ignore
+}
+
+# Restricted slug: keeps names easy to type and avoids CLI flag look-alikes.
 def check-name [name: string] {
     let shaped = ($name =~ '^[A-Za-z0-9](?:[A-Za-z0-9_-]+|\.[A-Za-z0-9_-]+)*$')
     if not $shaped or ($name | str length) > 64 {
