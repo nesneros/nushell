@@ -29,15 +29,13 @@ export def main [
     --list (-l) # list saved snippets as a table
     --delete (-d): string # delete a named snippet
 ] {
-    let db = clip-db
-
     if $list {
-        return (sqlite-list $db)
+        return (sqlite-list)
     }
 
     if $delete != null {
         check-name $delete
-        sqlite-delete $db $delete
+        sqlite-delete $delete
         print $"Deleted '($delete)'"
         return
     }
@@ -63,10 +61,10 @@ export def main [
         } catch {
             {format: "text", value: ($input | to text --no-newline)}
         })
-        sqlite-upsert $db $name ($row | insert kind ($input | describe))
+        sqlite-upsert $name ($row | insert kind ($input | describe))
         to-clipboard $input
     } else {
-        let row = sqlite-get $db $name
+        let row = sqlite-get $name
         if $row == null {
             error make { msg: $"No snippet named '($name)'" }
         }
@@ -164,24 +162,24 @@ def clip-db [] {
 }
 
 # List saved snippets as a table of name, size, kind and modified.
-def sqlite-list [db: path] {
-    open $db
+def sqlite-list [] {
+    open (clip-db)
     | query db "SELECT name, length(CAST(value AS BLOB)) as size, kind, modified FROM snippets ORDER BY name"
     | update size { into filesize }
     | update modified { into datetime }
 }
 
 # Fetch a snippet's format and value by name, or null if there is no such row.
-def sqlite-get [db: path, name: string] {
-    let rows = (open $db | query db "SELECT format, value FROM snippets WHERE name = :name" -p {name: $name})
+def sqlite-get [name: string] {
+    let rows = (open (clip-db) | query db "SELECT format, value FROM snippets WHERE name = :name" -p {name: $name})
     if ($rows | is-empty) { null } else { $rows | first }
 }
 
 type SnippetRow = record<format: string, kind: string, value: string>
 
 # Insert a snippet, or replace it if the name is already taken.
-def sqlite-upsert [db: path, name: string, row: SnippetRow] {
-    open $db | query db "
+def sqlite-upsert [name: string, row: SnippetRow] {
+    open (clip-db) | query db "
         INSERT INTO snippets (name, format, kind, value, modified)
         VALUES (:name, :format, :kind, :value, :modified)
         ON CONFLICT(name) DO UPDATE SET
@@ -199,8 +197,8 @@ def sqlite-upsert [db: path, name: string, row: SnippetRow] {
 }
 
 # Delete a snippet by name. A no-op if the name doesn't exist.
-def sqlite-delete [db: path, name: string] {
-    open $db | query db "DELETE FROM snippets WHERE name = :name" -p {name: $name} | ignore
+def sqlite-delete [name: string] {
+    open (clip-db) | query db "DELETE FROM snippets WHERE name = :name" -p {name: $name} | ignore
 }
 
 # Restricted slug: keeps names easy to type and avoids CLI flag look-alikes.
