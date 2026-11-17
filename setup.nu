@@ -72,7 +72,7 @@ const completions_file = ($nu.default-config-dir | path join "generated" "comple
 # specs, generated instead via nu's own `generate completions` (from the
 # command's carapace/fish/zsh completions, man page, or --help).
 # Add a command name here to extend; skipped if it isn't installed.
-const completion_commands = [mole,colima]
+const completion_commands = [mole,colima,opencode]
 
 # Write `generate completions` output for every installed command in
 # completion_commands into one file (all extern definitions in one place,
